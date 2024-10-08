@@ -1,6 +1,7 @@
 # R-Examples
 
-Stroke Prediction Dataset Analysis
+## Stroke Prediction Dataset Analysis
+
 Overview
 This repository contains an analysis of the Healthcare Stroke Prediction Dataset. The goal of this project was to explore the dataset, clean and preprocess the data, and perform basic statistical analysis and predictive modeling. This project is part of my data analysis portfolio, showcasing skills in data manipulation, exploratory data analysis (EDA), and regression modeling in R. The final code is well-documented to serve as a reference for future data analysis tasks.
 
