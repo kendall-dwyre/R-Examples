@@ -1,113 +1,109 @@
 # Kendall Dwyre
 # Purpose: Practice Data Analysis for GitHub Profile
-# Started 5/17/2024
+# Started: 5/17/2024
 # ---------------------------------------------------- # 
 
-# Packages 
-library(tidyverse) 
+# Required Packages
+library(tidyverse)
 
-# Objective 
-# Look at the healthcare-dataset-stroke-data.csv
-# Do general data analysis to draw conclusions 
+# Objective:
+# Perform data analysis on 'healthcare-dataset-stroke-data.csv'
+# Conduct general data cleaning, exploration, and statistical modeling to draw insights.
 
-# 1.) Load the data 
+# 1.) Load the data
 
-df <- read_csv("healthcare-dataset-stroke-data.csv")
-class(df) # Dataframe type
-head(df, 10) 
+health_data <- read_csv("healthcare-dataset-stroke-data.csv")
+class(health_data)  # Check the dataframe type
+head(health_data, 10)  # Preview the first 10 rows
 
-# The data is now loaded and turned into a dataframe (df)
-# But I'm curious if our data has any errors before continuing?
+# The data is loaded into 'health_data'
+# Let's proceed by checking for any missing or erroneous data.
 
-# 2.) Data cleaning / prep 
+# 2.) Data cleaning / preparation
 
-any(is.na(df)) # Returned: False (No NA's) 
-# Returns TRUE if there are any NA
-# Returns FALSE if there are no NA
+missing_values_present <- any(is.na(health_data))  
+print(missing_values_present)  # Check if there are any NA values
 
-# Not needed, but we can also count the NA's (which are none)
-colSums(is.na(df)) # 0's across the board 
+# Although there are no NA values, we’ll count them across columns for validation.
+na_count_per_column <- colSums(is.na(health_data))
+print(na_count_per_column)  # Ensure zeroes across all columns
 
-# This is good for us.  We can move forward with confidence
-# That our data is clean and ready for analysis.
+# The data is clean; we can move forward confidently.
 
-# 3.) Perform some exploration 
-# It can be useful to do some exploratory analysis to better 
-# Understand your data before making big inferences
+# 3.) Perform exploratory analysis
+# Before diving into more complex analysis, it's important to understand basic patterns in the data.
 
-# Assuming df is your data frame
-table(df$gender) 
-# Female 2994
-# Male 2115
-# Other 1 
-# Other will be removed since it's only 1 
+# Gender distribution:
+gender_distribution <- table(health_data$gender)
+print(gender_distribution)
+# Output:
+# Female: 2994
+# Male: 2115
+# Other: 1
+# We will exclude "Other" since it has only one observation.
 
-Q3_data_prep <- df %>% 
-  mutate(bmi = as.numeric(ifelse(bmi == 'N/A', NA, bmi))) %>% 
-  filter(!is.na(bmi) & bmi > 0) %>% 
-  filter(gender %in% c("Female", "Male")) %>% # No other
-  group_by(gender) %>% 
+# BMI analysis by gender (excluding "Other")
+bmi_analysis <- health_data %>%
+  mutate(bmi = as.numeric(ifelse(bmi == 'N/A', NA, bmi))) %>%  # Convert 'N/A' in BMI to NA and convert to numeric
+  filter(!is.na(bmi) & bmi > 0) %>%  # Filter out invalid BMI values
+  filter(gender %in% c("Female", "Male")) %>%  # Filter out the "Other" gender
+  group_by(gender) %>%
   summarize(
     mean_bmi = round(mean(bmi), 2),
     sd_bmi = round(sd(bmi), 2)
   ) %>% 
-  as.data.frame() 
+  as.data.frame()
 
-# View the result
-print(Q3_data_prep)
-# This shows us the mean and standard deviation (created)
-# For male and female of 
+# Display BMI summary by gender
+print(bmi_analysis)
 
-# 4.) Median of avg_glucose, based on age filtered 
+# 4.) Median glucose level analysis based on age filter
+# Filtering by age > 50 and calculating median glucose level.
 
-Q4_data_prep <- df %>%
-  filter(!is.na(age) & age > 50) %>%
+glucose_median_by_age <- health_data %>%
+  filter(!is.na(age) & age > 50) %>%  # Filter out missing ages and restrict to age > 50
   summarize(
     median_avg_glucose_level = median(avg_glucose_level, na.rm = TRUE)
-  ) %>% 
-  as.data.frame() 
+  ) %>%
+  as.data.frame()
 
-# Print the value
-print(Q4_data_prep)
+# Display the result
+print(glucose_median_by_age)
 
-# ---------------------------------------
-# 5.) Linear Regression 
+# 5.) Logistic Regression Analysis
+# We will predict the probability of stroke based on age using logistic regression.
 
-# Performing some linear regression 
-# Predicting avg_glucose_level off age and bmi
+log_reg_model <- glm(stroke ~ age, data = health_data, family = binomial)
+summary(log_reg_model)
 
-Q5_model <- glm(stroke ~ age, data = df, family = binomial)
-summary(Q5_model) 
+# This model attempts to predict stroke likelihood based on the age of the patient.
 
-# 6.) Performing a cor.test() 
+# 6.) Correlation Test (cor.test)
+# Correlation test to assess linear relationship between age and stroke outcome.
 
-# Cor.test() can be used to perform a hypothesis test of 
-# the correlation coefficient between two numeric variables.
-# It's goal is determining whether there is a significant
-# linear relationship between the variables.
+correlation_age_stroke <- cor.test(health_data$age, health_data$stroke)
+print(correlation_age_stroke)  # cor = 0.2452
 
-# A cor value close to 1 indicates a strong positive linear relationship.
-# -1 indicates a strong negative relationship.
-# 0 indicates no linear relationship.
+# Interpretation: A slight positive correlation between age and the occurrence of a stroke.
+# The p-value confirms statistical significance.
 
-cor_t <- cor.test(df$age, df$stroke) 
-print(cor_t)  # cor = .2452
+# 7.) More regression (handling categorical variables)
+# Converting categorical variables into numerical format to facilitate regression analysis.
 
-# This indicates that there is a slight positive relationship
-# The p-value helps us see that the value is significant
+health_data <- health_data %>%
+  mutate(
+    gender_numeric = as.numeric(factor(gender, levels = c('Male', 'Female'))),
+    ever_married_numeric = as.numeric(factor(ever_married, levels = c('Yes', 'No'))),
+    work_type_numeric = as.numeric(factor(work_type, levels = c('Private', 'Self-employed', 'Govt_job'))),
+    residence_type_numeric = as.numeric(factor(Residence_type, levels = c('Urban', 'Rural'))),
+    smoking_status_numeric = as.numeric(factor(smoking_status, levels = c('formerly smoked', 'never smoked', 'Unknown', 'smokes')))
+  )
 
-# Cor test helps us see how changes in one variable 
-# could affect another variable. 
+# Preview the transformed data
+head(health_data, 10)
 
-# 7.) More regression
+# Additional insights:
+# At this stage, we have transformed our dataset, performed basic exploratory analysis, 
+# and run some logistic regression and correlation tests. You can further enhance this analysis
+# by incorporating advanced modeling techniques, feature selection, and visualization for more in-depth conclusions.
 
-# Many of our variables are categorical, not as numbers.
-# If we want to use them we would need to convert them.
-
-df$gender <- as.numeric(factor(df$gender, levels = c('Male', 'Female')))
-df$ever_married <- as.numeric(factor(df$ever_married, levels = c('Yes', 'No')))
-df$work_type <- as.numeric(factor(df$work_type, levels = c('Private', 'Self-employed', 'Govt_job')))
-df$Residence_type <- as.numeric(factor(df$Residence_type, levels = c('Urban', 'Rural')))
-df$smoking_status <- as.numeric(factor(df$smoking_status, levels = c('formerly smoked', 'never smoked', 'Unknown', 'smokes')))
-
-head(df, 10)  
